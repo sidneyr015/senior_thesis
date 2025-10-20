@@ -1,0 +1,7 @@
+| Entity                    | State Dimensions            | Valid States | Invariants                                                                                                          | Transitions                |
+|---------------------------|-----------------------------|--------------|---------------------------------------------------------------------------------------------------------------------|----------------------------|
+| HttpResponse<Start>       | S: Start                    | Start        | - Only the status line of the HTTP response can be set.                                                             | new() -> Self              |
+|                           |                             |              | - It is not possible to add headers or body to the response.                                                        | status_line(Self) -> HttpResponse<Headers> |
+| HttpResponse<Headers>     | S: Headers                  | Headers      | - Headers and body for the HTTP response can be set.                                                                |                            |
+|                           |                             |              | - Until a response body has been set, the HTTP response can be considered incomplete.                               | body(Self) -> None         |
+|                           |                             |              | - In this state, it's not possible to change the status line of the response                                        |                            |

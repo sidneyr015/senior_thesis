@@ -1,0 +1,4 @@
+| Entity | State Dimensions | Valid States | Invariants | Transitions |
+|---|---|---|---|---|
+| `HttpResponse<S>` | `S` | `Start` | • Initial state of the `HttpResponse`.<br> • Represents that the status line has not yet been written.<br> • `state` field is initialized but contains no status line or headers. | `status_line(Self) -> HttpResponse<Headers>` |
+| `HttpResponse<S>` | `S` | `Headers` | • Represents that the status line has been written, but the body has not.<br> • Headers can be added to the response.<br> • `state` field contains the status line and any added headers. | `body(Self) -> ?` |
