@@ -18,7 +18,7 @@ if index_name not in [i["name"] for i in pc.list_indexes()]:
 
 index = pc.Index(index_name)
 
-reader = PdfReader("rm0041.pdf")
+reader = PdfReader("english_essay.pdf")
 
 vectors = []
 for page_num, page in enumerate(reader.pages, start=1): 
@@ -44,3 +44,35 @@ for page_num, page in enumerate(reader.pages, start=1):
             }
         })
 index.upsert(vectors=vectors)
+
+query = "physical domination"
+
+# Step 1: Embed query
+query_embedding = client.embeddings.create(
+    model="text-embedding-3-small",
+    input=query
+).data[0].embedding
+
+# Step 2: Query Pinecone
+results = index.query(
+    vector=query_embedding,
+    top_k=3,
+    include_metadata=True
+)
+
+# Get the most relevant chunk and its page
+main_hit = results["matches"][0]
+page = main_hit["metadata"]["page"]
+
+# Step 3: Retrieve context from nearby pages
+context_results = index.query(
+    vector=query_embedding,
+    filter={"page": {"$in": [page - 1, page, page + 1]}},
+    top_k=10,
+    include_metadata=True
+)
+
+for match in context_results["matches"]:
+    text = match["metadata"]["text"].replace("\n", " ")
+    print(f"Page {match['metadata']['page']}: {text[:200]}...")
+    #print(f"Page {match['metadata']['page']}: {match['metadata']['text'][:30]}...")
