@@ -26,13 +26,13 @@ class MCPClient:
             stdout=asyncio.subprocess.PIPE, 
             stderr=asyncio.subprocess.PIPE, 
         )
-        self.reader_task = asyncio.create_task(self.reader())
+        self._reader_task = asyncio.create_task(self._reader())
 
     async def stop(self) -> None: 
         if self.proc: 
             self.proc.terminate() 
             try: 
-                await asyncio.wait_fur(self.proc.wait(), timeout=2)
+                await asyncio.wait_for(self.proc.wait(), timeout=2)
             except asyncio.TimeoutError: 
                 self.proc.kill()
             self.proc = None
@@ -50,7 +50,31 @@ class MCPClient:
                 self._pending.clear() 
                 return 
             try: 
-                msg = json.loads(line.decode().strip)
+                msg = json.loads(line.decode().strip())
+            except Exception: 
+                continue 
+        
+            if "id" in msg and str(msg["id"]) in self._pending: 
+                fut = self._pending.pop(str(msg["id"]))
+                if not fut.done(): 
+                    fut.set_result(msg)
+    
+    async def request(self, method: str, params: JSON) -> JSON: 
+        if not self.proc or not self.proc.stdin: 
+            raise MCPError("MCP not started")
+        req_id = str(uuid.uuid4())
+        req = {"jsonrpc": "2.0", "id": req_id, "method": method, "params": params}
+        fut: asyncio.Future = asyncio.get_event_loop().create_future() 
+        self._pending[req_id] = fut
+        self.proc.stdin.write((json.dumps(req) + "\n").encode())
+        await self.proc.stdin.drain()
+        resp = await asyncio.wait_for(fut, timeout=60)
+        if "error" in resp: 
+            raise MCPError(json.dumps(resp["error"]))
+        return resp["result"] if "result" in resp else resp
+
+    async def call_tool(self, name: str, arguments: JSON) -> JSON: 
+        return await self.request("tools/call", {"name": name, "arguments": arguments})
 
 @asynccontextmanager
 async def mcp_client(path: str): 
@@ -60,3 +84,11 @@ async def mcp_client(path: str):
         yield client
     finally: 
         await client.stop()
+
+async def main():
+    async with mcp_client("/Users/sidneyrichardson/senior_thesis-1") as client:
+        resp = await client.call_tool("semantic_search", {"path": "", "query": "mcp_client", "threshold": 0.1})
+        print(resp)
+
+if __name__ == "__main__":
+    asyncio.run(main())
