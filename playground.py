@@ -73,7 +73,6 @@ async def main():
     for entry in entries: 
         print(entry)
 
-
 if __name__ == "__main__":
     asyncio.run(main())
 

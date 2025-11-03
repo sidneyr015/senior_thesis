@@ -20,7 +20,13 @@ class SemanticSearchTool(BaseTool):
         async with mcp_client(path) as client: 
             result = await client.call_tool( 
                 "semantic_search", 
-                {"query": query, "mode": mode, "threshold": 0.1}
+                {
+                    "query": "state_transistions",
+                    "mode": "code",
+                    "threshold": 0.1,
+                    "detail_level": "partial",
+                    "max_results": 20
+                }
             )
         return result
     
