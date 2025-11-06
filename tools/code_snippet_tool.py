@@ -1,6 +1,3 @@
-from langchain.agents import tool
-
-@tool
 def get_code_snippet(file: str, start: int = None, end: int = None, lines: list[int] = None) -> str:
     """
     Return specific lines from a source file.

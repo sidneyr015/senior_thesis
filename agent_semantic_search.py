@@ -10,6 +10,7 @@ from langchain.chat_models import init_chat_model
 from datetime import datetime
 from pathlib import Path 
 import re 
+import json
 
 
 from tools.semantic_search_tool import semantic_search_tool
@@ -18,20 +19,20 @@ from tools.code_snippet_tool import get_code_snippet
 
 class State(TypedDict): 
     messages: Annotated[list, add_messages]
-
-graph_builder = StateGraph(State)
+    entries: list
 
 api_key = os.getenv("OPENAI_API_KEY")
 os.environ["OPENAI_API_KEY"] = api_key
 
 llm = init_chat_model("gpt-4o")
 
-async def find_invariants(state: MessagesState): 
+async def find_invariants(state): 
     """
     Example node: call semantic_search, then ask LLM to turn results into a typestate table.
     """
+    print("finding invaraits")
     q = "enum"
-    repo_path = "/Users/sidneyrichardson/senior_thesis-1/code_examples/once_cell"
+    repo_path = "/Users/sidneyrichardson/senior_thesis-1/code_examples/personal_once_cell"
     search = await semantic_search_tool._arun(query=q, mode="all", path=repo_path)
     print("search!")
     entries = parse(search["content"][0]["text"])
@@ -39,40 +40,100 @@ async def find_invariants(state: MessagesState):
     #     print(entry)
     return {"entries": entries}
 
-async def decide_snippets(state): 
+async def fetch_snippets(state): 
+    print("Running fetch_snippets, state keys:", list(state.keys()))
     entries = state["entries"]
     prompt = """"
-            You are an expert Rust engineer and program analysis researcher.
-            Your goal is to extract typestate invariants from Rust code, including implicit and explicit rules enforced by the type system, ownership, or lifetimes.
+        You analyze Rust code for typestate-based invariants.
+        Focus only on compile-time rules involving ownership, generics, and state transitions.
 
-            Context:
+        Identify:
 
-            Rust's affine type system enforces single ownership and prevents data races and invalid access.
+        entity: the struct, enum, or module representing a stateful type
 
-            Many invariants in Rust are implicit — enforced by generics, lifetimes, and typestate encodings (e.g. File<Open>, Socket<Connected>).
+        state_dimensions: how its type encodes state (e.g. generic parameter, trait bound)
 
-            These invariants ensure temporal order (operations occur legally) and state consistency (resources are only used in valid states).
+        valid_states: all compile-time states (e.g. Closed, Open)
 
-            Your task:
-            Given the Rust code snippet below, identify and fill out a structured table describing the typestate system and invariants it encodes."
-            """"
+        invariant: one condition that must always hold (temporal or consistency)
+
+        transition: how one state moves to another (e.g. Closed → Open via open())
+
+        evidence_lines: line numbers supporting this invariant
+
+        Return only this JSON:
+
+        {
+        "file": "<file_path>",
+        "line_range": {"start": <int>, "end": <int>},
+        "typestate_table": [
+            {
+            "entity": "<name>",
+            "state_dimensions": "<description>",
+            "valid_states": ["<state1>", "<state2>"],
+            "invariant": "<rule>",
+            "transition": "<transition or '-'>",
+            "evidence_lines": [<int>, ...]
+            }
+        ]
+        }
+        If none found, return an empty "typestate_table": [].
+    """
+    results = []
+    for entry in entries: 
+        code_snippet = get_code_snippet("/Users/sidneyrichardson/senior_thesis-1/code_examples/personal_once_cell/" + entry["file"], entry["start_line"], entry["end_line"])
+        response = llm.invoke([
+            HumanMessage(content=prompt + "\n\n Please find type_state invariants for this code snippet" + code_snippet)
+        ])
+        try:
+            data = json.loads(response.content)
+        except Exception:
+            data = {"file": entry["file"], "typestate_table": []}
+        results.append(data)
+        print(response.content)
+        print("\n\n")
+
+    for result in results:
+        print(result + "\n\n")
+    return {"entries": results}
+
 
 graph = StateGraph(State)
 graph.add_node("find_invariants", find_invariants)
+graph.add_node("fetch_snippets", fetch_snippets)
 graph.add_edge(START, "find_invariants")
-graph.add_edge("find_invariants", END)
+graph.add_edge("find_invariants", "fetch_snippets")
+graph.add_edge("fetch_snippets", END)
 app = graph.compile()
 
 def parse(text): 
-    # Split into individual matches
-    chunks = text.split("\n\n\n")  # Triple newline between entries
-    parsed = []
+    # Split the search results into separate entries (works for double/triple newlines)
+    chunks = re.split(r"\n{2,}", text)
+    entries = []
+
     for chunk in chunks:
-        print(chunk + "\n")
         lines = [l.strip() for l in chunk.splitlines() if l.strip()]
-        if lines and lines[0].startswith(tuple(str(i) + "." for i in range(1, 100))):
-            parsed.append("\n".join(lines))
-    return chunks
+        if not lines:
+            continue
+
+        # Identify lines like "6. src/imp_pl.rs"
+        file_match = re.search(r"(\d+)\.\s+([^\s]+\.rs)", chunk)
+        sim_match = re.search(r"Similarity\s+([0-9.]+)", chunk)
+
+        # Extract all numbered code lines (e.g., "45: pub(crate)...")
+        line_numbers = [int(m) for m in re.findall(r"^(\d+):", chunk, re.MULTILINE)]
+
+        if file_match and line_numbers:
+            entry = {
+                "index": int(file_match.group(1)),
+                "file": file_match.group(2).strip(),
+                "similarity": float(sim_match.group(1)) if sim_match else None,
+                "start_line": min(line_numbers),
+                "end_line": max(line_numbers),
+                "code": "\n".join(chunk.split("\n")[3:]).strip()
+            }
+            entries.append(entry)
+    return entries
 
 async def main(): 
     state = {"messages": [HumanMessage(content="/Users/sidneyrichardson/senior_thesis-1")]}
