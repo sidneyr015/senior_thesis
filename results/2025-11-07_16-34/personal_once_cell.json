@@ -1,0 +1,185 @@
+[
+  {
+    "file": "src/lib.rs",
+    "line_range": {
+      "start": 1411,
+      "end": 1412
+    },
+    "typestate_table": [],
+    "comment": "good"
+  },
+  {
+    "file": "src/imp_pl.rs",
+    "line_range": {
+      "start": 128,
+      "end": 134
+    },
+    "typestate_table": [],
+    "comment": "good"
+  },
+  {
+    "file": "src/imp_pl.rs",
+    "line_range": {
+      "start": 116,
+      "end": 120
+    },
+    "typestate_table": [], 
+    "comment": "good"
+  },
+  {
+    "file": "src/imp_pl.rs",
+    "line_range": {
+      "start": 45,
+      "end": 77
+    },
+    "typestate_table": [
+      {
+        "entity": "InitializeState", 
+        "state_dimensions": "Internal state managed with a mutable pointer to Option<T>",
+        "valid_states": [
+          "Uninitialized",
+          "Initialized"
+        ],
+        "invariant": "Value in slot remains None until successfully initialized",
+        "transition": "Uninitialized \u2192 Initialized via successful execution of F",
+        "evidence_lines": [
+          51,
+          66,
+          67,
+          68,
+          63,
+          64
+        ]
+      }
+    ], 
+    "comment": "okay"
+  },
+  {
+    "file": "src/imp_pl.rs",
+    "line_range": {
+      "start": 122,
+      "end": 125
+    },
+    "typestate_table": []
+  },
+  {
+    "file": "src/imp_pl.rs",
+    "line_range": {
+      "start": 32,
+      "end": 34
+    },
+    "typestate_table": []
+  },
+  {
+    "file": "src/imp_pl.rs",
+    "line_range": {
+      "start": 7,
+      "end": 10
+    },
+    "typestate_table": [
+      {
+        "entity": "OnceCell",
+        "state_dimensions": "AtomicU8 encodes state",
+        "valid_states": [
+          "Uninitialized",
+          "Initializing",
+          "Initialized"
+        ],
+        "invariant": "Once initialized, value remains unchanged",
+        "transition": "Uninitialized \u2192 Initializing \u2192 Initialized via internal logic using AtomicU8",
+        "evidence_lines": [
+          7,
+          8,
+          9
+        ]
+      }
+    ], 
+    "comment": "the invariant is true, but I don't know how it's getting that from those lines"
+  },
+  {
+    "file": "src/imp_pl.rs",
+    "line_range": {
+      "start": 139,
+      "end": 167
+    },
+    "typestate_table": [
+      {
+        "entity": "Guard",
+        "state_dimensions": "new_state property indicating state",
+        "valid_states": [
+          "INCOMPLETE",
+          "RUNNING",
+          "COMPLETE"
+        ],
+        "invariant": "state can only move from INCOMPLETE to COMPLETE or RUNNING",
+        "transition": "INCOMPLETE \u2192 RUNNING via compare_exchange_weak; INCOMPLETE \u2192 COMPLETE via init()",
+        "evidence_lines": [
+          142,
+          145,
+          146,
+          147
+        ]
+      }
+    ], 
+    "comment": "this isn't great. Can only move to incomplete, running, to incomplete. Never resets to complete unless init is true. "
+  },
+  {
+    "file": "src/imp_pl.rs",
+    "line_range": {
+      "start": 37,
+      "end": 40
+    },
+    "typestate_table": [],
+    "comment": "good"
+  },
+  {
+    "file": "src/imp_pl.rs",
+    "line_range": {
+      "start": 28,
+      "end": 30
+    },
+    "typestate_table": [
+      {
+        "entity": "OnceCell<T>",
+        "state_dimensions": "AtomicU8 represents state",
+        "valid_states": [
+          "INCOMPLETE",
+          "INITIALIZED"
+        ],
+        "invariant": "Once a OnceCell is initialized, its state cannot revert back to INCOMPLETE",
+        "transition": "INCOMPLETE \u2192 INITIALIZED via successful initialization",
+        "evidence_lines": [
+          29
+        ]
+      }
+    ],
+    "comment": "this is not good. There is no evidence of that invariant, only that state, that whe there is no value it is incomplete"
+  },
+  {
+    "file": "src/imp_pl.rs",
+    "line_range": {
+      "start": 12,
+      "end": 15
+    },
+    "typestate_table": [],
+    "comment": "good"
+  },
+  {
+    "file": "src/imp_pl.rs",
+    "line_range": {
+      "start": 108,
+      "end": 114
+    },
+    "typestate_table": [],
+    "comment": "good"
+  },
+  {
+    "file": "src/imp_pl.rs",
+    "line_range": {
+      "start": 169,
+      "end": 174
+    },
+    "typestate_table": [],
+    "comment": "good"
+  }
+]

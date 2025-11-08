@@ -64,7 +64,7 @@ async def fetch_snippets(state):
         Return only this JSON:
 
         {
-        "file": "<file_path>",
+        "file": "<file_path>"
         "line_range": {"start": <int>, "end": <int>},
         "typestate_table": [
             {
@@ -85,16 +85,27 @@ async def fetch_snippets(state):
         response = llm.invoke([
             HumanMessage(content=prompt + "\n\n Please find type_state invariants for this code snippet" + code_snippet)
         ])
-        try:
-            data = json.loads(response.content)
-        except Exception:
-            data = {"file": entry["file"], "typestate_table": []}
-        results.append(data)
-        print(response.content)
-        print("\n\n")
+        raw = response.content
+        match = re.search(r"```json\s*(\{.*\})\s*```", raw, re.DOTALL)
+        if match:
+            json_text = match.group(1)
+        else:
+            json_text = raw.strip()
 
-    for result in results:
-        print(result + "\n\n")
+        if json_text: 
+            data = json.loads(json_text)
+            data["file"] = entry["file"]
+            results.append(data)
+
+        timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M")  # use underscores, not slashes
+        results_dir = Path("results") / timestamp
+        results_dir.mkdir(parents=True, exist_ok=True)
+
+        output_path = results_dir / "personal_once_cell.json"
+
+        with open(output_path, "w") as f:
+            json.dump(results, f, indent=2)
+
     return {"entries": results}
 
 
@@ -133,6 +144,8 @@ def parse(text):
                 "code": "\n".join(chunk.split("\n")[3:]).strip()
             }
             entries.append(entry)
+    
+    
     return entries
 
 async def main(): 
