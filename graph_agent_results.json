@@ -1,0 +1,31 @@
+[
+  {
+    "natural_language": "List state transitions for OnceCell",
+    "cypher": "MATCH (n)\nWHERE toLower(n.name) = 'oncecell'\nRETURN n.name AS name, n.qualified_name AS qualified_name, labels(n) AS type;",
+    "row_count": 3,
+    "rows": [
+      {
+        "name": "OnceCell",
+        "qualified_name": "personal_once_cell.src.imp_pl.OnceCell",
+        "type": [
+          "Class"
+        ]
+      },
+      {
+        "name": "OnceCell",
+        "qualified_name": "personal_once_cell.src.lib.sync.OnceCell",
+        "type": [
+          "Class"
+        ]
+      },
+      {
+        "name": "OnceCell",
+        "qualified_name": "personal_once_cell.src.lib.unsync.OnceCell",
+        "type": [
+          "Class"
+        ]
+      }
+    ],
+    "timestamp": "2025-11-10T22:46:10.554429"
+  }
+]
