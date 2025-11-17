@@ -1,0 +1,172 @@
+{
+  "agent": "semantic_search_agent",
+  "prompt": "\"\n        You analyze Rust code for typestate-based invariants.\n        Focus only on compile-time rules involving ownership, generics, and state transitions.\n\n        Identify:\n\n        entity: the struct, enum, or module representing a stateful type\n\n        state_dimensions: how its type encodes state (e.g. generic parameter, trait bound)\n\n        valid_states: all compile-time states (e.g. Closed, Open)\n\n        invariant: one condition that must always hold (temporal or consistency)\n\n        transition: how one state moves to another (e.g. Closed \u2192 Open via open())\n\n        evidence_lines: line numbers supporting this invariant\n\n        Return only this JSON:\n\n        {\n        \"file\": \"<file_path>\"\n        \"line_range\": {\"start\": <int>, \"end\": <int>},\n        \"typestate_table\": [\n            {\n            \"entity\": \"<name>\",\n            \"state_dimensions\": \"<description>\",\n            \"valid_states\": [\"<state1>\", \"<state2>\"],\n            \"invariant\": \"<rule>\",\n            \"transition\": \"<transition or '-'>\",\n            \"evidence_lines\": [<int>, ...]\n            }\n        ]\n        }\n        If none found, return an empty \"typestate_table\": [].\n    ",
+  "results": [
+    {
+      "file": "src/lib.rs",
+      "line_range": {
+        "start": 1411,
+        "end": 1412
+      },
+      "typestate_table": []
+    },
+    {
+      "file": "src/imp_pl.rs",
+      "line_range": {
+        "start": 128,
+        "end": 134
+      },
+      "typestate_table": []
+    },
+    {
+      "file": "src/imp_pl.rs",
+      "line_range": {
+        "start": 116,
+        "end": 120
+      },
+      "typestate_table": []
+    },
+    {
+      "file": "src/imp_pl.rs",
+      "line_range": {
+        "start": 45,
+        "end": 77
+      },
+      "typestate_table": [
+        {
+          "entity": "StatefulCell",
+          "state_dimensions": "Inner state managed via closures and unsafe blocks",
+          "valid_states": [
+            "Uninitialized",
+            "Initialized"
+          ],
+          "invariant": "Once the cell is marked as initialized, a unique access must guarantee no panic until initialization completes.",
+          "transition": "Uninitialized \u2192 Initialized via initialize()",
+          "evidence_lines": [
+            51,
+            66,
+            67,
+            62,
+            63,
+            68
+          ]
+        }
+      ]
+    },
+    {
+      "file": "src/imp_pl.rs",
+      "line_range": {
+        "start": 122,
+        "end": 125
+      },
+      "typestate_table": []
+    },
+    {
+      "file": "src/imp_pl.rs",
+      "line_range": {
+        "start": 32,
+        "end": 34
+      },
+      "typestate_table": []
+    },
+    {
+      "file": "src/imp_pl.rs",
+      "line_range": {
+        "start": 7,
+        "end": 10
+      },
+      "typestate_table": [
+        {
+          "entity": "OnceCell<T>",
+          "state_dimensions": "state field encoded as AtomicU8",
+          "valid_states": [
+            "Uninitialized",
+            "Initialized"
+          ],
+          "invariant": "Once initialized, the state cannot revert to Uninitialized",
+          "transition": "Uninitialized \u2192 Initialized via setting a value",
+          "evidence_lines": [
+            7,
+            8,
+            9,
+            10
+          ]
+        }
+      ],
+      "comment": "Don't need invariant, transitin, if not evident in those lines"
+    },
+    {
+      "file": "src/imp_pl.rs",
+      "line_range": {
+        "start": 139,
+        "end": 167
+      },
+      "typestate_table": [
+        {
+          "entity": "AtomicU8",
+          "state_dimensions": "AtomicU8 value representing state",
+          "valid_states": [
+            "INCOMPLETE",
+            "RUNNING",
+            "COMPLETE"
+          ],
+          "invariant": "State must eventually reach COMPLETE or return if already there",
+          "transition": "INCOMPLETE \u2192 RUNNING via compare_exchange_weak; RUNNING \u2192 COMPLETE if init() returns true",
+          "evidence_lines": [
+            142,
+            144,
+            145,
+            146,
+            147,
+            151,
+            153,
+            156,
+            163
+          ]
+        }
+      ]
+    },
+    {
+      "file": "src/imp_pl.rs",
+      "line_range": {
+        "start": 37,
+        "end": 40
+      },
+      "typestate_table": []
+    },
+    {
+      "file": "src/imp_pl.rs",
+      "line_range": {
+        "start": 28,
+        "end": 30
+      },
+      "typestate_table": []
+    },
+    {
+      "file": "src/imp_pl.rs",
+      "line_range": {
+        "start": 12,
+        "end": 14
+      },
+      "typestate_table": []
+    },
+    {
+      "file": "src/imp_pl.rs",
+      "line_range": {
+        "start": 108,
+        "end": 114
+      },
+      "typestate_table": []
+    },
+    {
+      "file": "src/imp_pl.rs",
+      "line_range": {
+        "start": 169,
+        "end": 174
+      },
+      "typestate_table": []
+    }
+  ],
+  "token_usage": 5677,
+  "timestamp": "2025-11-12T22:02:39.847648"
+}

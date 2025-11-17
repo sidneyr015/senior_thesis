@@ -1,0 +1,468 @@
+{
+  "agent": "semantic_search_haluc_agent",
+  "prompt": "\nYou analyze Rust code for typestate-based and invariant-based behavior.\n\nYour task: extract one JSON entry per state. A \"state\" may be:\n1. an explicit typestate encoded at compile time\n2. an implicit conceptual state implied by temporal order or state-consistency rules in the API.\n\nDefinitions:\n\nentity: the struct or type whose behavior exhibits state-dependent invariants.\nstate: either a concrete compile-time state (e.g., Start, Headers) OR an implicit runtime state inferred from method sequencing (e.g., \"uninitialized\", \"opened\", \"closed\").\nstate_dimensions: how the state is encoded or inferred (generic S: State, PhantomData<S>, trait bound, enum variant, method availability pattern, required ownership, etc.)\n\ntemporal_invariant: a rule that constrains the legal order of operations, even if not encoded with types. Example: \u201copen must be called before read\u201d.\n\nstate_consistency_invariant: a rule that constrains which operations are valid in a given state. Example: \u201ccannot write after finalized()\u201d.\n\nimplicit_state: a conceptual state inferred from signatures, mutability, consumption of self, or method availability, even if not represented in types.\n\ninvariants: rules that must always hold when the entity is in that state. These may come from explicit typestate structure OR implicit temporal/state-consistency analysis.\n\ntransitions: any method that consumes self and returns a value in a different state. For implicit cases, transitions come from method behavior patterns (e.g., self-consuming patterns, disabling operations, or producing new capability sets).\n\nimplicit_invariants: temporal or state-consistency conditions inferred even when types do not encode them explicitly.\n\nevidence_lines: lines supporting invariants or transitions.\n\nImportant rules:\n\nEvery valid state \u2014 explicit or implicit \u2014 must appear as its own entry.\n\nIf a state has no transitions, still produce an entry with \"transitions\": [].\n\nInclude:\n1. explicit typestate structure (generics, PhantomData, marker types)\n2. implicit invariants about temporal order and state consistency drawn from API structure\n\nDo NOT include:\n- value-dependent runtime logic\n- unrelated control-flow behavior\n\nIf no explicit typestate exists, still extract implicit states or invariant groups whenever temporal or state-consistency rules appear. If absolutely no such structure exists, return an empty typestate_table.\n\nOutput JSON only:\n\n{\n\"file\": \"<file_path>\",\n\"line_range\": {\"start\": <int>, \"end\": <int>},\n\"typestate_table\": [\n{\n\"entity\": \"<name>\",\n\"state\": \"<state_name>\",\n\"state_dimensions\": \"<description>\",\n\"invariants\": [\"<condition1>\", \"<condition2>\"],\n\"implicit_invariants\": [\"<temporal rule>\", \"<state-consistency rule>\"],\n\"transitions\": [\"<ThisState -> NextState via method()>\", ...],\n\"evidence_lines\": [<int>, ...]\n}\n]\n}\n\nExplicit Typestate Examples:\n\nRust code:\nstruct HttpResponse<S: ResponseState> { ... }\n\nenum Start {}\nenum Headers {}\n\nimpl HttpResponse<Start> {\n    fn status_line(self, ...) -> HttpResponse<Headers> { ... }\n}\n\nimpl HttpResponse<Headers> {\n    fn header(&mut self, ...) { ... }\n    fn body(self, ...) { ... }\n}\n\nExpected output:\n\n{\n\"typestate_table\": [\n{\n    \"entity\": \"HttpResponse\",\n    \"state\": \"Start\",\n    \"state_dimensions\": \"generic parameter S: ResponseState (PhantomData<S>)\",\n    \"invariants\": [\n        \"status line not yet parsed\",\n        \"no headers available\"\n        ],\n    \"transitions\": [\n        \"Start -> Headers via status_line()\"\n        ],\n    \"evidence_lines\": [5, 8]\n    },\n    {\n    \"entity\": \"HttpResponse\",\n    \"state\": \"Headers\",\n    \"state_dimensions\": \"generic parameter S: ResponseState (PhantomData<S>)\",\n        \"invariants\": [\n        \"status line already parsed\",\n        \"headers may be added\",\n        \"body not yet finalized\"\n        ],\n    \"transitions\": [\n        \"Headers -> Finalized via body()\"\n        ],\n    \"evidence_lines\": [12, 15]\n    }\n    ]\n}\n\nImplicit Example: \n\nRust code:\n\npub struct FileHandle {\n    fd: i32,\n    is_open: bool,\n}\n\nimpl FileHandle {\n    pub fn open(path: &str) -> FileHandle {\n        FileHandle { fd: 3, is_open: true }\n    }\n\n    pub fn read(&self) -> Result<Vec<u8>, &'static str> {\n        if !self.is_open { return Err(\"closed\") }\n        Ok(vec![1, 2, 3])\n    }\n\n    pub fn close(mut self) -> Result<(), &'static str> {\n        if !self.is_open { return Err(\"already closed\") }\n        self.is_open = false;\n        Ok(())\n    }\n{\n  \"file\": \"<file_path>\",\n  \"line_range\": { \"start\": 1, \"end\": 34 },\n  \"typestate_table\": [\n    {\n      \"entity\": \"FileHandle\",\n      \"state\": \"Open\",\n      \"state_dimensions\": \"implicit state inferred from method requirements and self-consuming close()\",\n      \"invariants\": [\n        \"file descriptor is valid\",\n        \"resource is open\",\n        \"read() operations are valid\"\n      ],\n      \"transitions\": [\n        \"Open -> Closed via close()\"\n      ],\n      \"evidence_lines\": [8, 13, 19]\n    },\n    {\n      \"entity\": \"FileHandle\",\n      \"state\": \"Closed\",\n      \"state_dimensions\": \"implicit state inferred from invalidity of read() and post-close behavior\",\n      \"invariants\": [\n        \"resource is closed\",\n        \"read() operations are invalid\",\n        \"no legal transitions remain\"\n      ],\n      \"transitions\": [],\n      \"evidence_lines\": [10, 20, 22]\n    }\n  ]\n}\n}\n\n\n",
+  "results": [
+    {
+      "file": "src/imp_pl.rs",
+      "line_range": {
+        "start": 128,
+        "end": 134
+      },
+      "typestate_table": [
+        {
+          "entity": "once_cell.src.imp_pl.Guard.drop",
+          "state": "Active",
+          "state_dimensions": "implicit state inferred from atomic state and synchronization behavior",
+          "invariants": [
+            "component is actively managing a state",
+            "parking/unparking behavior is dependent on state"
+          ],
+          "implicit_invariants": [
+            "atomic state store may imply transition readiness",
+            "unpark_all implies readiness signaling"
+          ],
+          "transitions": [
+            "Active -> Signaling via store() and unpark_all()"
+          ],
+          "evidence_lines": [
+            129,
+            132
+          ]
+        },
+        {
+          "entity": "once_cell.src.imp_pl.Guard.drop",
+          "state": "Signaling",
+          "state_dimensions": "implicit state inferred from post-atomic state update and unpark behavior",
+          "invariants": [
+            "component has signaled readiness",
+            "expects external components to respond"
+          ],
+          "implicit_invariants": [
+            "state update to new state is legally binding",
+            "unparking behavior is contingent on state change"
+          ],
+          "transitions": [],
+          "evidence_lines": [
+            129,
+            132
+          ]
+        }
+      ],
+      "comments": "okay, i guess, but do I really want this? "
+    },
+    {
+      "file": "src/imp_pl.rs",
+      "line_range": {
+        "start": 116,
+        "end": 120
+      },
+      "typestate_table": [
+        {
+          "entity": "ValueContainerType",
+          "state": "Filled",
+          "state_dimensions": "method availability pattern and Option return type",
+          "invariants": [
+            "value is present"
+          ],
+          "transitions": [
+            "Filled -> Empty via into_inner() when value is taken"
+          ],
+          "evidence_lines": [
+            117,
+            118
+          ]
+        },
+        {
+          "entity": "ValueContainerType",
+          "state": "Empty",
+          "state_dimensions": "method behavior pattern suggesting absence of value",
+          "invariants": [
+            "value is absent"
+          ],
+          "transitions": [],
+          "evidence_lines": [
+            116
+          ]
+        }
+      ],
+      "comments": "issues with first lines and second lines being off by one?"
+    }, 
+    {
+      "file": "src/imp_pl.rs",
+      "line_range": {
+        "start": 45,
+        "end": 77
+      },
+      "typestate_table": [
+        {
+          "entity": "once_cell.src.imp_pl.OnceCell.initialize",
+          "state": "Uninitialized",
+          "state_dimensions": "implicit state inferred from initialize() usage and mutability requirements",
+          "invariants": [
+            "value is not set",
+            "initialize() can be called to set the value"
+          ],
+          "implicit_invariants": [
+            "initialize_inner() must safely handle errors and propagation",
+            "re-entrant calls leading to deadlock must be avoided"
+          ],
+          "transitions": [
+            "Uninitialized -> Initialized via successful execution of initialize()"
+          ],
+          "evidence_lines": [
+            51,
+            52,
+            59,
+            63,
+            66,
+            67
+          ]
+        },
+        {
+          "entity": "once_cell.src.imp_pl.OnceCell.initialize",
+          "state": "Initialized",
+          "state_dimensions": "implicit state inferred from successful value setting",
+          "invariants": [
+            "value is set",
+            "initialize() should no longer alter the value"
+          ],
+          "implicit_invariants": [
+            "subsequent calls to initialize() should not alter existing value"
+          ],
+          "transitions": [],
+          "evidence_lines": [
+            63,
+            66,
+            67,
+            69
+          ]
+        }
+      ]
+    },
+    {
+      "file": "src/imp_pl.rs",
+      "line_range": {
+        "start": 122,
+        "end": 125
+      },
+      "typestate_table": [
+        {
+          "entity": "once_cell.src.imp_pl.Guard",
+          "state": "Active",
+          "state_dimensions": "implicit state inferred from state field and self-consuming behavior",
+          "invariants": [
+            "associated with an AtomicU8 state",
+            "new state value is determined"
+          ],
+          "implicit_invariants": [
+            "operation tied to AtomicU8 modification"
+          ],
+          "transitions": [],
+          "evidence_lines": [
+            122,
+            123,
+            124
+          ]
+        }
+      ]
+    },
+    {
+      "file": "src/imp_pl.rs",
+      "line_range": {
+        "start": 32,
+        "end": 34
+      },
+      "typestate_table": [
+        {
+          "entity": "once_cell.src.imp_pl.OnceCell.with_value",
+          "state": "Initialized",
+          "state_dimensions": "implicit state inferred from the use of with_value() to instantiate a complete state",
+          "invariants": [
+            "state is complete",
+            "value is initialized and present"
+          ],
+          "transitions": [],
+          "evidence_lines": [
+            32,
+            33
+          ]
+        }
+      ]
+    },
+    {
+      "file": "src/imp_pl.rs",
+      "line_range": {
+        "start": 7,
+        "end": 10
+      },
+      "typestate_table": [
+        {
+          "entity": "once_cell.src.imp_pl.OnceCell",
+          "state": "Uninitialized",
+          "state_dimensions": "implicit state inferred from state field and lack of set value",
+          "invariants": [
+            "AtomicU8 state indicates uninitialized",
+            "value is None"
+          ],
+          "implicit_invariants": [
+            "value must be set before use"
+          ],
+          "transitions": [
+            "Uninitialized -> Initialized via set()"
+          ],
+          "evidence_lines": [
+            8,
+            9
+          ]
+        },
+        {
+          "entity": "once_cell.src.imp_pl.OnceCell",
+          "state": "Initialized",
+          "state_dimensions": "implicit state inferred from non-None value",
+          "invariants": [
+            "AtomicU8 state indicates initialized",
+            "value is Some(T)"
+          ],
+          "implicit_invariants": [
+            "Once initialized, cannot be set again"
+          ],
+          "transitions": [],
+          "evidence_lines": [
+            8,
+            9
+          ]
+        }
+      ]
+    },
+    {
+      "file": "src/imp_pl.rs",
+      "line_range": {
+        "start": 139,
+        "end": 167
+      },
+      "typestate_table": [
+        {
+          "entity": "once_cell.src.imp_pl.initialize_inner",
+          "state": "INCOMPLETE",
+          "state_dimensions": "implicit state inferred from compare_exchange_weak and state pattern matching",
+          "invariants": [
+            "initial state before initialization begins",
+            "state can transition to RUNNING if compare_exchange_weak succeeds"
+          ],
+          "transitions": [
+            "INCOMPLETE -> RUNNING via compare_exchange_weak()"
+          ],
+          "evidence_lines": [
+            142,
+            164
+          ]
+        },
+        {
+          "entity": "once_cell.src.imp_pl.initialize_inner",
+          "state": "RUNNING",
+          "state_dimensions": "implicit state inferred from ongoing initialization and dynamic checks",
+          "invariants": [
+            "initialization is in progress",
+            "state can transition to COMPLETE if init() succeeds"
+          ],
+          "transitions": [
+            "RUNNING -> COMPLETE via init() + guard manipulation",
+            "RUNNING -> INCOMPLETE via parking_lot_core::park()"
+          ],
+          "evidence_lines": [
+            144,
+            152,
+            156
+          ]
+        },
+        {
+          "entity": "once_cell.src.imp_pl.initialize_inner",
+          "state": "COMPLETE",
+          "state_dimensions": "implicit state inferred from the outcome of init() and dynamic checks",
+          "invariants": [
+            "initialization has been completed",
+            "no further state transitions"
+          ],
+          "transitions": [],
+          "evidence_lines": [
+            151,
+            147
+          ]
+        }
+      ]
+    },
+    {
+      "file": "src/imp_pl.rs",
+      "line_range": {
+        "start": 37,
+        "end": 40
+      },
+      "typestate_table": [
+        {
+          "entity": "EntityName",
+          "state": "Initialized",
+          "state_dimensions": "implicit state inferred from checking the state against COMPLETE",
+          "invariants": [
+            "entity has reached COMPLETE state"
+          ],
+          "implicit_invariants": [
+            "certain operations require the entity to be in COMPLETE state"
+          ],
+          "transitions": [],
+          "evidence_lines": [
+            38,
+            39
+          ]
+        },
+        {
+          "entity": "EntityName",
+          "state": "Uninitialized",
+          "state_dimensions": "implicit state inferred from failure to reach COMPLETE state",
+          "invariants": [
+            "entity has not reached COMPLETE state"
+          ],
+          "implicit_invariants": [
+            "certain operations cannot proceed if the entity is not in COMPLETE state"
+          ],
+          "transitions": [],
+          "evidence_lines": [
+            38,
+            39
+          ]
+        }
+      ]
+    },
+    {
+      "file": "src/imp_pl.rs",
+      "line_range": {
+        "start": 28,
+        "end": 30
+      },
+      "typestate_table": [
+        {
+          "entity": "once_cell.src.imp_pl.OnceCell.new",
+          "state": "Incomplete",
+          "state_dimensions": "implicit state inferred from `AtomicU8::new(INCOMPLETE)` and initial `None` value in `UnsafeCell`",
+          "invariants": [
+            "state is incomplete",
+            "value is not yet set"
+          ],
+          "transitions": [],
+          "evidence_lines": [
+            28,
+            29,
+            30
+          ]
+        }
+      ]
+    },
+    {
+      "file": "src/imp_pl.rs",
+      "line_range": {
+        "start": 12,
+        "end": 14
+      },
+      "typestate_table": [
+        {
+          "entity": "TaskState",
+          "state": "INCOMPLETE",
+          "state_dimensions": "implicit state inferred from usage of INCOMPLETE constant",
+          "invariants": [
+            "task is not yet started",
+            "no progress made"
+          ],
+          "implicit_invariants": [
+            "must transition to RUNNING before completing"
+          ],
+          "transitions": [
+            "INCOMPLETE -> RUNNING via start() or equivalent method"
+          ],
+          "evidence_lines": [
+            12
+          ]
+        },
+        {
+          "entity": "TaskState",
+          "state": "RUNNING",
+          "state_dimensions": "implicit state inferred from usage of RUNNING constant",
+          "invariants": [
+            "task is currently executing",
+            "progress is ongoing"
+          ],
+          "implicit_invariants": [
+            "must transition to COMPLETE after work is finished"
+          ],
+          "transitions": [
+            "RUNNING -> COMPLETE via finish() or equivalent method"
+          ],
+          "evidence_lines": [
+            13
+          ]
+        },
+        {
+          "entity": "TaskState",
+          "state": "COMPLETE",
+          "state_dimensions": "implicit state inferred from usage of COMPLETE constant",
+          "invariants": [
+            "task execution is finished",
+            "cannot revert to prior states"
+          ],
+          "implicit_invariants": [
+            "no further transitions are allowed"
+          ],
+          "transitions": [],
+          "evidence_lines": [
+            14
+          ]
+        }
+      ],
+      "comments": "issues with hallucination from just struct definitons?"
+    },
+    {
+      "file": "src/imp_pl.rs",
+      "line_range": {
+        "start": 109,
+        "end": 114
+      },
+      "typestate_table": [
+        {
+          "entity": "once_cell.src.imp_pl.OnceCell.get_mut",
+          "state": "Occupied",
+          "state_dimensions": "implicit state inferred from mutability and presence of a value",
+          "invariants": [
+            "value is present and mutable",
+            "get_mut() can safely return a mutable reference"
+          ],
+          "implicit_invariants": [
+            "get_mut() only valid when cell is occupied"
+          ],
+          "transitions": [],
+          "evidence_lines": [
+            109,
+            111,
+            112
+          ]
+        },
+        {
+          "entity": "once_cell.src.imp_pl.OnceCell.get_mut",
+          "state": "Empty",
+          "state_dimensions": "implicit state inferred from the return value of get_mut() and absence of a value",
+          "invariants": [
+            "value is absent",
+            "operations requiring a value return None"
+          ],
+          "implicit_invariants": [
+            "get_mut() returns None when cell is empty"
+          ],
+          "transitions": [],
+          "evidence_lines": [
+            109,
+            112
+          ]
+        }
+      ]
+    }
+  ],
+  "token_usage": 19543,
+  "timestamp": "2025-11-17T18:24:18.569803"
+}

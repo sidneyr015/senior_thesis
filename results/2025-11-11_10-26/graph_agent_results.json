@@ -1,0 +1,230 @@
+{
+  "agent": "graph_search_agent",
+  "graph_results": [
+    {
+      "tool_name": "query_codebase_knowledge_graph",
+      "query_used": "MATCH (n)\nWHERE toLower(n.name) = 'oncecell'\nRETURN n.name AS name, n.path AS path, n.qualified_name AS qualified_name, labels(n) AS type;",
+      "results": [
+        {
+          "name": "OnceCell",
+          "path": null,
+          "qualified_name": "personal_once_cell.src.imp_pl.OnceCell",
+          "type": [
+            "Class"
+          ]
+        },
+        {
+          "name": "OnceCell",
+          "path": null,
+          "qualified_name": "personal_once_cell.src.lib.sync.OnceCell",
+          "type": [
+            "Class"
+          ]
+        },
+        {
+          "name": "OnceCell",
+          "path": null,
+          "qualified_name": "personal_once_cell.src.lib.unsync.OnceCell",
+          "type": [
+            "Class"
+          ]
+        }
+      ],
+      "summary": "Successfully retrieved 3 item(s) from the graph.",
+      "row_count": 3,
+      "timestamp": "2025-11-11T15:25:47.014615"
+    },
+    {
+      "tool_name": "query_codebase_knowledge_graph",
+      "query_used": "MATCH (n:Function|Method)\nWHERE toLower(n.qualified_name) = 'personal_once_cell.src.imp_pl.oncecell'\nRETURN n.name AS name, n.qualified_name AS qualified_name, labels(n) AS type;",
+      "results": [],
+      "summary": "Successfully retrieved 0 item(s) from the graph.",
+      "row_count": 0,
+      "timestamp": "2025-11-11T15:25:47.014644"
+    },
+    {
+      "tool_name": "query_codebase_knowledge_graph",
+      "query_used": "MATCH (n)\nWHERE toLower(n.qualified_name) = 'personal_once_cell.src.lib.sync.oncecell'\nRETURN n.name AS name, n.path AS path, n.qualified_name AS qualified_name, labels(n) AS type;",
+      "results": [
+        {
+          "name": "OnceCell",
+          "path": null,
+          "qualified_name": "personal_once_cell.src.lib.sync.OnceCell",
+          "type": [
+            "Class"
+          ]
+        }
+      ],
+      "summary": "Successfully retrieved 1 item(s) from the graph.",
+      "row_count": 1,
+      "timestamp": "2025-11-11T15:25:47.014651"
+    },
+    {
+      "tool_name": "query_codebase_knowledge_graph",
+      "query_used": "MATCH (n)\nWHERE toLower(n.qualified_name) = 'personal_once_cell.src.lib.unsync.oncecell'\nRETURN n.name AS name, n.path AS path, n.qualified_name AS qualified_name, labels(n) AS type;",
+      "results": [
+        {
+          "name": "OnceCell",
+          "path": null,
+          "qualified_name": "personal_once_cell.src.lib.unsync.OnceCell",
+          "type": [
+            "Class"
+          ]
+        }
+      ],
+      "summary": "Successfully retrieved 1 item(s) from the graph.",
+      "row_count": 1,
+      "timestamp": "2025-11-11T15:25:47.014657"
+    }
+  ],
+  "code_snippets": [
+    {
+      "qualified_name": "personal_once_cell.src.imp_pl.OnceCell",
+      "file_path": "src/imp_pl.rs",
+      "line_start": 7,
+      "line_end": 10,
+      "source_code": "pub(crate) struct OnceCell<T> {\n    state: AtomicU8,\n    value: UnsafeCell<Option<T>>,\n}\n",
+      "found": true,
+      "error_message": null
+    },
+    {
+      "qualified_name": "personal_once_cell.src.lib.sync.OnceCell",
+      "file_path": "src/lib.rs",
+      "line_start": 901,
+      "line_end": 901,
+      "source_code": "    pub struct OnceCell<T>(Imp<T>);\n",
+      "found": true,
+      "error_message": null
+    },
+    {
+      "qualified_name": "personal_once_cell.src.lib.unsync.OnceCell",
+      "file_path": "src/lib.rs",
+      "line_start": 411,
+      "line_end": 414,
+      "source_code": "    pub struct OnceCell<T> {\n        // Invariant: written to at most once.\n        inner: UnsafeCell<Option<T>>,\n    }\n",
+      "found": true,
+      "error_message": null
+    },
+    {
+      "qualified_name": "personal_once_cell.src.lib.sync.OnceCell",
+      "file_path": "src/lib.rs",
+      "line_start": 901,
+      "line_end": 901,
+      "source_code": "    pub struct OnceCell<T>(Imp<T>);\n",
+      "found": true,
+      "error_message": null
+    },
+    {
+      "qualified_name": "personal_once_cell.src.lib.unsync.OnceCell",
+      "file_path": "src/lib.rs",
+      "line_start": 411,
+      "line_end": 414,
+      "source_code": "    pub struct OnceCell<T> {\n        // Invariant: written to at most once.\n        inner: UnsafeCell<Option<T>>,\n    }\n",
+      "found": true,
+      "error_message": null
+    }
+  ],
+  "typestate_analyses": [
+    {
+      "qualified_name": "personal_once_cell.src.imp_pl.OnceCell",
+      "analysis": {
+        "file": "src/imp_pl.rs",
+        "line_range": {
+          "start": 1,
+          "end": 4
+        },
+        "typestate_table": [
+          {
+            "entity": "OnceCell<T>",
+            "state_dimensions": "AtomicU8 field for state tracking",
+            "valid_states": [
+              "Uninitialized",
+              "Initialized"
+            ],
+            "invariant": "The state must correctly indicate if the value is set or not",
+            "transition": "Uninitialized \u2192 Initialized via setting a value",
+            "evidence_lines": [
+              1,
+              2,
+              3
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "qualified_name": "personal_once_cell.src.lib.sync.OnceCell",
+      "analysis": {
+        "file": "src/lib.rs",
+        "line_range": {
+          "start": 1,
+          "end": 1
+        },
+        "typestate_table": []
+      }
+    },
+    {
+      "qualified_name": "personal_once_cell.src.lib.unsync.OnceCell",
+      "analysis": {
+        "file": "src/lib.rs",
+        "line_range": {
+          "start": 1,
+          "end": 4
+        },
+        "typestate_table": [
+          {
+            "entity": "OnceCell",
+            "state_dimensions": "Option inside UnsafeCell",
+            "valid_states": [
+              "None",
+              "Some(T)"
+            ],
+            "invariant": "written to at most once",
+            "transition": "-",
+            "evidence_lines": [
+              3
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "qualified_name": "personal_once_cell.src.lib.sync.OnceCell",
+      "analysis": {
+        "file": "src/lib.rs",
+        "line_range": {
+          "start": 1,
+          "end": 1
+        },
+        "typestate_table": []
+      }
+    },
+    {
+      "qualified_name": "personal_once_cell.src.lib.unsync.OnceCell",
+      "analysis": {
+        "file": "src/lib.rs",
+        "line_range": {
+          "start": 1,
+          "end": 4
+        },
+        "typestate_table": [
+          {
+            "entity": "OnceCell",
+            "state_dimensions": "Option<T> inside UnsafeCell",
+            "valid_states": [
+              "None",
+              "Some(T)"
+            ],
+            "invariant": "written to at most once",
+            "transition": "-",
+            "evidence_lines": [
+              2,
+              3
+            ]
+          }
+        ]
+      }
+    }
+  ],
+  "timestamp": "2025-11-11T15:26:06.215145"
+}

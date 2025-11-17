@@ -17,6 +17,12 @@ from prompts.prompt_11_13 import prompt as prompt_typestate_extraction
 from tools.semantic_search_tool import semantic_search_tool
 from tools.code_snippet_tool import get_code_snippet
 
+""""
+Improvements for Semantic Search Haluc Agent:
+- Fix entity name assignment to use "qualified_name" from graph nodes.
+- Add better get_code_snippet handling for including comments. 
+ 
+"""
 
 class State(TypedDict): 
     messages: Annotated[list, add_messages]
@@ -31,7 +37,7 @@ async def find_invariants(state):
     """
     Example node: call semantic_search, then ask LLM to turn results into a typestate table.
     """
-    print("finding invaraits")
+    print("finding invariants")
     q = "enum"
     repo_path = "/Users/sidneyrichardson/senior_thesis-1/code_examples/personal_once_cell"
     search = await semantic_search_tool._arun(query=q, mode="all", path=repo_path)
@@ -47,6 +53,8 @@ async def fetch_snippets(state):
     prompt = prompt_typestate_extraction
     results = []
     total_tokens = 0
+
+    output_path = ""
 
     for entry in entries: 
         code_snippet = get_code_snippet("/Users/sidneyrichardson/senior_thesis-1/code_examples/personal_once_cell/" + entry["file"], entry["start_line"], entry["end_line"])
@@ -81,7 +89,7 @@ async def fetch_snippets(state):
         output_path = results_dir / "personal_once_cell.json"
 
         output = {
-            "agent": "semantic_search_agent",
+            "agent": "semantic_search_haluc_agent",
             "prompt": prompt,
             "results": results,
             "token_usage": total_tokens,
@@ -90,9 +98,51 @@ async def fetch_snippets(state):
 
         with open(output_path, "w") as f:
             json.dump(output, f, indent=2)
+    
+    fix_entity_name(output_path)
 
     return {"entries": results}
 
+def fix_entity_name(output_name: str) -> None: 
+    # Load typestate output
+    with open(output_name, "r") as f:
+        ts = json.load(f)
+        
+    # Load graph
+    with open("code_examples/my_graph.json") as f: 
+        graph_data = json.load(f)
+
+    # Build fast lookup: start_line → node
+    line_index = {}
+
+    for node in graph_data["nodes"]:
+        props = node["properties"]
+        if "start_line" in props and "end_line" in props:
+            for ln in range(props["start_line"] - 1, props["end_line"] + 1):
+                line_index[ln] = node
+
+    # For every result block in typestate output
+    for result in ts.get("results", []):
+        line_start = result["line_range"]["start"]
+
+        # Get the matching node using start_line
+        node = line_index.get(line_start)
+
+        # If found, extract the qualified_name
+        if node:
+            qname = node["properties"].get("qualified_name")
+            
+            # Update all state rows inside the typestate_table
+            for entry in result.get("typestate_table", []):
+                entry["qualified_name"] = qname
+
+    # Write back the modified file
+    with open(output_name, "w") as f:
+        json.dump(ts, f, indent=2)
+
+    print("Entity names updated using graph qualified names.")
+
+    return output_name
 
 graph = StateGraph(State)
 graph.add_node("find_invariants", find_invariants)
@@ -136,7 +186,7 @@ def parse(text):
 async def main(): 
     state = {"messages": [HumanMessage(content="/Users/sidneyrichardson/senior_thesis-1")]}
     async for s in app.astream(state, stream_mode="values"): 
-        print(s)
+        continue
 
 if __name__ == "__main__":
     asyncio.run(main())

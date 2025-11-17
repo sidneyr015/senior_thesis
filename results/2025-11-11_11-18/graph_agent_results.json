@@ -1,0 +1,368 @@
+{
+  "agent": "graph_search_agent",
+  "graph_results": [
+    {
+      "tool_name": "query_codebase_knowledge_graph",
+      "query_used": "MATCH (n)\nWHERE toLower(n.name) = 'oncecell'\nRETURN n.name AS name, n.qualified_name AS qualified_name, labels(n) AS type;",
+      "results": [
+        {
+          "name": "OnceCell",
+          "qualified_name": "personal_once_cell.src.imp_pl.OnceCell",
+          "type": [
+            "Class"
+          ]
+        },
+        {
+          "name": "OnceCell",
+          "qualified_name": "personal_once_cell.src.lib.sync.OnceCell",
+          "type": [
+            "Class"
+          ]
+        },
+        {
+          "name": "OnceCell",
+          "qualified_name": "personal_once_cell.src.lib.unsync.OnceCell",
+          "type": [
+            "Class"
+          ]
+        }
+      ],
+      "summary": "Successfully retrieved 3 item(s) from the graph.",
+      "row_count": 3,
+      "timestamp": "2025-11-11T16:17:54.857391"
+    },
+    {
+      "tool_name": "query_codebase_knowledge_graph",
+      "query_used": "MATCH (c:Class {qualified_name: 'personal_once_cell.src.imp_pl.OnceCell'})-[:DEFINES_METHOD]->(m:Method)\nRETURN m.name AS name, m.qualified_name AS qualified_name, labels(m) AS type;",
+      "results": [
+        {
+          "name": "new",
+          "qualified_name": "personal_once_cell.src.imp_pl.OnceCell.new",
+          "type": [
+            "Method"
+          ]
+        },
+        {
+          "name": "initialize",
+          "qualified_name": "personal_once_cell.src.imp_pl.OnceCell.initialize",
+          "type": [
+            "Method"
+          ]
+        },
+        {
+          "name": "is_initialized",
+          "qualified_name": "personal_once_cell.src.imp_pl.OnceCell.is_initialized",
+          "type": [
+            "Method"
+          ]
+        },
+        {
+          "name": "with_value",
+          "qualified_name": "personal_once_cell.src.imp_pl.OnceCell.with_value",
+          "type": [
+            "Method"
+          ]
+        },
+        {
+          "name": "wait",
+          "qualified_name": "personal_once_cell.src.imp_pl.OnceCell.wait",
+          "type": [
+            "Method"
+          ]
+        },
+        {
+          "name": "get_unchecked",
+          "qualified_name": "personal_once_cell.src.imp_pl.OnceCell.get_unchecked",
+          "type": [
+            "Method"
+          ]
+        },
+        {
+          "name": "into_inner",
+          "qualified_name": "personal_once_cell.src.imp_pl.OnceCell.into_inner",
+          "type": [
+            "Method"
+          ]
+        },
+        {
+          "name": "get_mut",
+          "qualified_name": "personal_once_cell.src.imp_pl.OnceCell.get_mut",
+          "type": [
+            "Method"
+          ]
+        }
+      ],
+      "summary": "Successfully retrieved 8 item(s) from the graph.",
+      "row_count": 8,
+      "timestamp": "2025-11-11T16:17:54.857414"
+    },
+    {
+      "tool_name": "query_codebase_knowledge_graph",
+      "query_used": "MATCH (c:Class {qualified_name: 'personal_once_cell.src.lib.sync.OnceCell'})-[:DEFINES_METHOD]->(m:Method)\nRETURN m.name AS name, m.qualified_name AS qualified_name, labels(m) AS type;",
+      "results": [],
+      "summary": "Successfully retrieved 0 item(s) from the graph.",
+      "row_count": 0,
+      "timestamp": "2025-11-11T16:17:54.857421"
+    },
+    {
+      "tool_name": "query_codebase_knowledge_graph",
+      "query_used": "MATCH (c:Class)\nWHERE toLower(c.qualified_name) = 'personal_once_cell.src.lib.unsync.oncecell'\nMATCH (c)-[:DEFINES_METHOD]->(m:Method)\nRETURN m.name AS name, m.qualified_name AS qualified_name, labels(m) AS type;",
+      "results": [],
+      "summary": "Successfully retrieved 0 item(s) from the graph.",
+      "row_count": 0,
+      "timestamp": "2025-11-11T16:17:54.857426"
+    }
+  ],
+  "code_snippets": [
+    {
+      "qualified_name": "personal_once_cell.src.imp_pl.OnceCell",
+      "file_path": "src/imp_pl.rs",
+      "line_start": 7,
+      "line_end": 10,
+      "source_code": "pub(crate) struct OnceCell<T> {\n    state: AtomicU8,\n    value: UnsafeCell<Option<T>>,\n}\n",
+      "found": true,
+      "error_message": null
+    },
+    {
+      "qualified_name": "personal_once_cell.src.lib.sync.OnceCell",
+      "file_path": "src/lib.rs",
+      "line_start": 901,
+      "line_end": 901,
+      "source_code": "    pub struct OnceCell<T>(Imp<T>);\n",
+      "found": true,
+      "error_message": null
+    },
+    {
+      "qualified_name": "personal_once_cell.src.lib.unsync.OnceCell",
+      "file_path": "src/lib.rs",
+      "line_start": 411,
+      "line_end": 414,
+      "source_code": "    pub struct OnceCell<T> {\n        // Invariant: written to at most once.\n        inner: UnsafeCell<Option<T>>,\n    }\n",
+      "found": true,
+      "error_message": null
+    },
+    {
+      "qualified_name": "personal_once_cell.src.imp_pl.OnceCell.new",
+      "file_path": "src/imp_pl.rs",
+      "line_start": 28,
+      "line_end": 30,
+      "source_code": "    pub(crate) const fn new() -> OnceCell<T> {\n        OnceCell { state: AtomicU8::new(INCOMPLETE), value: UnsafeCell::new(None) }\n    }\n",
+      "found": true,
+      "error_message": null
+    },
+    {
+      "qualified_name": "personal_once_cell.src.imp_pl.OnceCell.initialize",
+      "file_path": "src/imp_pl.rs",
+      "line_start": 45,
+      "line_end": 77,
+      "source_code": "    pub(crate) fn initialize<F, E>(&self, f: F) -> Result<(), E>\n    where\n        F: FnOnce() -> Result<T, E>,\n    {\n        let mut f = Some(f);\n        let mut res: Result<(), E> = Ok(());\n        let slot: *mut Option<T> = self.value.get();\n        initialize_inner(&self.state, &mut || {\n            // We are calling user-supplied function and need to be careful.\n            // - if it returns Err, we unlock mutex and return without touching anything\n            // - if it panics, we unlock mutex and propagate panic without touching anything\n            // - if it calls `set` or `get_or_try_init` re-entrantly, we get a deadlock on\n            //   mutex, which is important for safety. We *could* detect this and panic,\n            //   but that is more complicated\n            // - finally, if it returns Ok, we store the value and store the flag with\n            //   `Release`, which synchronizes with `Acquire`s.\n            let f = unsafe { f.take().unwrap_unchecked() };\n            match f() {\n                Ok(value) => unsafe {\n                    // Safe b/c we have a unique access and no panic may happen\n                    // until the cell is marked as initialized.\n                    debug_assert!((*slot).is_none());\n                    *slot = Some(value);\n                    true\n                },\n                Err(err) => {\n                    res = Err(err);\n                    false\n                }\n            }\n        });\n        res\n    }\n",
+      "found": true,
+      "error_message": null
+    },
+    {
+      "qualified_name": "personal_once_cell.src.imp_pl.OnceCell.is_initialized",
+      "file_path": "src/imp_pl.rs",
+      "line_start": 38,
+      "line_end": 40,
+      "source_code": "    pub(crate) fn is_initialized(&self) -> bool {\n        self.state.load(Ordering::Acquire) == COMPLETE\n    }\n",
+      "found": true,
+      "error_message": null
+    },
+    {
+      "qualified_name": "personal_once_cell.src.imp_pl.OnceCell.with_value",
+      "file_path": "src/imp_pl.rs",
+      "line_start": 32,
+      "line_end": 34,
+      "source_code": "    pub(crate) const fn with_value(value: T) -> OnceCell<T> {\n        OnceCell { state: AtomicU8::new(COMPLETE), value: UnsafeCell::new(Some(value)) }\n    }\n",
+      "found": true,
+      "error_message": null
+    },
+    {
+      "qualified_name": "personal_once_cell.src.imp_pl.OnceCell.wait",
+      "file_path": "src/imp_pl.rs",
+      "line_start": 80,
+      "line_end": 92,
+      "source_code": "    pub(crate) fn wait(&self) {\n        let key = &self.state as *const _ as usize;\n        unsafe {\n            parking_lot_core::park(\n                key,\n                || self.state.load(Ordering::Acquire) != COMPLETE,\n                || (),\n                |_, _| (),\n                parking_lot_core::DEFAULT_PARK_TOKEN,\n                None,\n            );\n        }\n    }\n",
+      "found": true,
+      "error_message": null
+    },
+    {
+      "qualified_name": "personal_once_cell.src.imp_pl.OnceCell.get_unchecked",
+      "file_path": "src/imp_pl.rs",
+      "line_start": 101,
+      "line_end": 105,
+      "source_code": "    pub(crate) unsafe fn get_unchecked(&self) -> &T {\n        debug_assert!(self.is_initialized());\n        let slot = &*self.value.get();\n        slot.as_ref().unwrap_unchecked()\n    }\n",
+      "found": true,
+      "error_message": null
+    },
+    {
+      "qualified_name": "personal_once_cell.src.imp_pl.OnceCell.into_inner",
+      "file_path": "src/imp_pl.rs",
+      "line_start": 117,
+      "line_end": 119,
+      "source_code": "    pub(crate) fn into_inner(self) -> Option<T> {\n        self.value.into_inner()\n    }\n",
+      "found": true,
+      "error_message": null
+    },
+    {
+      "qualified_name": "personal_once_cell.src.imp_pl.OnceCell.get_mut",
+      "file_path": "src/imp_pl.rs",
+      "line_start": 109,
+      "line_end": 113,
+      "source_code": "    pub(crate) fn get_mut(&mut self) -> Option<&mut T> {\n        // Safe b/c we have an exclusive access\n        let slot: &mut Option<T> = unsafe { &mut *self.value.get() };\n        slot.as_mut()\n    }\n",
+      "found": true,
+      "error_message": null
+    }
+  ],
+  "typestate_analyses": [
+    {
+      "qualified_name": {
+        "qualified_name": "personal_once_cell.src.imp_pl.OnceCell",
+        "file_path": "src/imp_pl.rs",
+        "line_start": 7,
+        "line_end": 10,
+        "source_code": "pub(crate) struct OnceCell<T> {\n    state: AtomicU8,\n    value: UnsafeCell<Option<T>>,\n}\n",
+        "found": true,
+        "error_message": null
+      },
+      "analysis": []
+    },
+    {
+      "qualified_name": {
+        "qualified_name": "personal_once_cell.src.lib.sync.OnceCell",
+        "file_path": "src/lib.rs",
+        "line_start": 901,
+        "line_end": 901,
+        "source_code": "    pub struct OnceCell<T>(Imp<T>);\n",
+        "found": true,
+        "error_message": null
+      },
+      "analysis": []
+    },
+    {
+      "qualified_name": {
+        "qualified_name": "personal_once_cell.src.lib.unsync.OnceCell",
+        "file_path": "src/lib.rs",
+        "line_start": 411,
+        "line_end": 414,
+        "source_code": "    pub struct OnceCell<T> {\n        // Invariant: written to at most once.\n        inner: UnsafeCell<Option<T>>,\n    }\n",
+        "found": true,
+        "error_message": null
+      },
+      "analysis": [
+        {
+          "entity": "OnceCell",
+          "state_dimensions": "Generic type parameter T",
+          "valid_states": [
+            "Empty",
+            "Initialized"
+          ],
+          "invariant": "Written to at most once",
+          "transition": "Empty \u2192 Initialized via a method like set()",
+          "evidence_lines": [
+            1,
+            2,
+            3
+          ]
+        }
+      ]
+    },
+    {
+      "qualified_name": {
+        "qualified_name": "personal_once_cell.src.imp_pl.OnceCell.new",
+        "file_path": "src/imp_pl.rs",
+        "line_start": 28,
+        "line_end": 30,
+        "source_code": "    pub(crate) const fn new() -> OnceCell<T> {\n        OnceCell { state: AtomicU8::new(INCOMPLETE), value: UnsafeCell::new(None) }\n    }\n",
+        "found": true,
+        "error_message": null
+      },
+      "analysis": []
+    },
+    {
+      "qualified_name": {
+        "qualified_name": "personal_once_cell.src.imp_pl.OnceCell.initialize",
+        "file_path": "src/imp_pl.rs",
+        "line_start": 45,
+        "line_end": 77,
+        "source_code": "    pub(crate) fn initialize<F, E>(&self, f: F) -> Result<(), E>\n    where\n        F: FnOnce() -> Result<T, E>,\n    {\n        let mut f = Some(f);\n        let mut res: Result<(), E> = Ok(());\n        let slot: *mut Option<T> = self.value.get();\n        initialize_inner(&self.state, &mut || {\n            // We are calling user-supplied function and need to be careful.\n            // - if it returns Err, we unlock mutex and return without touching anything\n            // - if it panics, we unlock mutex and propagate panic without touching anything\n            // - if it calls `set` or `get_or_try_init` re-entrantly, we get a deadlock on\n            //   mutex, which is important for safety. We *could* detect this and panic,\n            //   but that is more complicated\n            // - finally, if it returns Ok, we store the value and store the flag with\n            //   `Release`, which synchronizes with `Acquire`s.\n            let f = unsafe { f.take().unwrap_unchecked() };\n            match f() {\n                Ok(value) => unsafe {\n                    // Safe b/c we have a unique access and no panic may happen\n                    // until the cell is marked as initialized.\n                    debug_assert!((*slot).is_none());\n                    *slot = Some(value);\n                    true\n                },\n                Err(err) => {\n                    res = Err(err);\n                    false\n                }\n            }\n        });\n        res\n    }\n",
+        "found": true,
+        "error_message": null
+      },
+      "analysis": []
+    },
+    {
+      "qualified_name": {
+        "qualified_name": "personal_once_cell.src.imp_pl.OnceCell.is_initialized",
+        "file_path": "src/imp_pl.rs",
+        "line_start": 38,
+        "line_end": 40,
+        "source_code": "    pub(crate) fn is_initialized(&self) -> bool {\n        self.state.load(Ordering::Acquire) == COMPLETE\n    }\n",
+        "found": true,
+        "error_message": null
+      },
+      "analysis": []
+    },
+    {
+      "qualified_name": {
+        "qualified_name": "personal_once_cell.src.imp_pl.OnceCell.with_value",
+        "file_path": "src/imp_pl.rs",
+        "line_start": 32,
+        "line_end": 34,
+        "source_code": "    pub(crate) const fn with_value(value: T) -> OnceCell<T> {\n        OnceCell { state: AtomicU8::new(COMPLETE), value: UnsafeCell::new(Some(value)) }\n    }\n",
+        "found": true,
+        "error_message": null
+      },
+      "analysis": []
+    },
+    {
+      "qualified_name": {
+        "qualified_name": "personal_once_cell.src.imp_pl.OnceCell.wait",
+        "file_path": "src/imp_pl.rs",
+        "line_start": 80,
+        "line_end": 92,
+        "source_code": "    pub(crate) fn wait(&self) {\n        let key = &self.state as *const _ as usize;\n        unsafe {\n            parking_lot_core::park(\n                key,\n                || self.state.load(Ordering::Acquire) != COMPLETE,\n                || (),\n                |_, _| (),\n                parking_lot_core::DEFAULT_PARK_TOKEN,\n                None,\n            );\n        }\n    }\n",
+        "found": true,
+        "error_message": null
+      },
+      "analysis": []
+    },
+    {
+      "qualified_name": {
+        "qualified_name": "personal_once_cell.src.imp_pl.OnceCell.get_unchecked",
+        "file_path": "src/imp_pl.rs",
+        "line_start": 101,
+        "line_end": 105,
+        "source_code": "    pub(crate) unsafe fn get_unchecked(&self) -> &T {\n        debug_assert!(self.is_initialized());\n        let slot = &*self.value.get();\n        slot.as_ref().unwrap_unchecked()\n    }\n",
+        "found": true,
+        "error_message": null
+      },
+      "analysis": []
+    },
+    {
+      "qualified_name": {
+        "qualified_name": "personal_once_cell.src.imp_pl.OnceCell.into_inner",
+        "file_path": "src/imp_pl.rs",
+        "line_start": 117,
+        "line_end": 119,
+        "source_code": "    pub(crate) fn into_inner(self) -> Option<T> {\n        self.value.into_inner()\n    }\n",
+        "found": true,
+        "error_message": null
+      },
+      "analysis": []
+    },
+    {
+      "qualified_name": {
+        "qualified_name": "personal_once_cell.src.imp_pl.OnceCell.get_mut",
+        "file_path": "src/imp_pl.rs",
+        "line_start": 109,
+        "line_end": 113,
+        "source_code": "    pub(crate) fn get_mut(&mut self) -> Option<&mut T> {\n        // Safe b/c we have an exclusive access\n        let slot: &mut Option<T> = unsafe { &mut *self.value.get() };\n        slot.as_mut()\n    }\n",
+        "found": true,
+        "error_message": null
+      },
+      "analysis": []
+    }
+  ],
+  "timestamp": "2025-11-11T16:18:15.305020"
+}

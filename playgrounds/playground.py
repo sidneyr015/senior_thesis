@@ -13,33 +13,33 @@ async def call_mcp_tool(query, mode="all", path="/path/to/project"):
     )
 
     #Prepare JSON-RPC request
-    # request = {
-    #     "jsonrpc": "2.0",
-    #     "id": str(uuid.uuid4()),
-    #     "method": "tools/call",
-    #     "params": { "name": "semantic_search",
-    #                 "arguments": {
-    #                     "query": "state_transistions",
-    #                     "mode": "code",
-    #                     "threshold": 0.01,
-    #                     "detail_level": "partial",
-    #                     "max_results": 20
-    #                 }
-    #             }
-    # }
-
     request = {
         "jsonrpc": "2.0",
         "id": str(uuid.uuid4()),
         "method": "tools/call",
-        "params": { "name": "lsp_goto_definition",
+        "params": { "name": "semantic_search",
                     "arguments": {
-                        "file": "src/imp_pl.rs",
-                        "line": 27, 
-                        "symbol": "OnceCell",
+                        "query": "state_transistions",
+                        "mode": "code",
+                        "threshold": 0.01,
+                        "detail_level": "partial",
+                        "max_results": 20
                     }
                 }
     }
+
+    # request = {
+    #     "jsonrpc": "2.0",
+    #     "id": str(uuid.uuid4()),
+    #     "method": "tools/call",
+    #     "params": { "name": "lsp_goto_definition",
+    #                 "arguments": {
+    #                     "file": "src/imp_pl.rs",
+    #                     "line": 27, 
+    #                     "symbol": "OnceCell",
+    #                 }
+    #             }
+    # }
 
 
     # Send it 
