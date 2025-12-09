@@ -64,4 +64,4 @@ def get_code_snippet(file: str, start: int = None, end: int = None, lines: list[
     indices = range(expanded_start_idx, end_idx + 1)
     snippet = [f"{i+1:>4}: {all_lines[i].rstrip()}" for i in indices]
 
-    return "\n".join(snippet)
+    return [expanded_start_idx, "\n".join(snippet)] 

@@ -2,3 +2,32 @@ api_key.txt
 venv/
 code_examples/
 git code-graph-rag
+
+# OS junk
+.DS_Store
+
+# Virtual env
+merged_env/
+
+# Python build junk
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.egg-info/
+
+# Node
+node_modules/
+
+# Results and generated artifacts
+results/
+my_graph.json
+
+# Code graph local config/artifacts
+code_graph_rag/.env
+code_graph_rag/__pycache__/
+code_graph_rag/*.pyc
+
+# Editors
+.vscode/
+.idea/

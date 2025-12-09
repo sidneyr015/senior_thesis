@@ -1,6 +1,9 @@
+import argparse
 from typing import Annotated
 from typing_extensions import TypedDict
 import asyncio
+import subprocess
+import sys
 
 from langchain_core.messages import HumanMessage
 from langgraph.graph import StateGraph, START, END, MessagesState
@@ -13,7 +16,6 @@ import re
 import json
 from prompts.prompt_11_13 import prompt as prompt_typestate_extraction
 from prompts.clean_up_prompt import prompt as prompt_clean_up
-
 
 from tools.semantic_search_tool import semantic_search_tool
 from tools.code_snippet_tool import get_code_snippet
@@ -33,13 +35,9 @@ os.environ["OPENAI_API_KEY"] = api_key
 
 llm = init_chat_model("gpt-4o")
 
-async def find_invariants(state): 
-    """
-    Example node: call semantic_search, then ask LLM to turn results into a typestate table.
-    """
+async def find_invariants(state, repo_path): 
     print("finding invariants")
     q = "enum"
-    repo_path = "/Users/sidneyrichardson/senior_thesis-1/code_examples/personal_once_cell"
     search = await semantic_search_tool._arun(query=q, mode="all", path=repo_path)
     print("search!")
     entries = parse(search["content"][0]["text"])
@@ -47,17 +45,15 @@ async def find_invariants(state):
         print(entry)
     return {"entries": entries}
 
-async def fetch_snippets(state): 
-    print("Running fetch_snippets, state keys:", list(state.keys()))
+async def fetch_snippets(state, repo_path, output_path): 
+    print("Running fetch_snippets and extracting type states")
     entries = state["entries"]
     prompt = prompt_typestate_extraction
     results = []
     total_tokens = 0
 
-    output_path = ""
-
     for entry in entries: 
-        expanded_start_line, code_snippet = get_code_snippet("/Users/sidneyrichardson/senior_thesis-1/code_examples/personal_once_cell/" + entry["file"], entry["start_line"], entry["end_line"])
+        expanded_start_line, code_snippet = get_code_snippet(os.path.join(repo_path, entry["file"]), entry["start_line"], entry["end_line"])
         response = llm.invoke([
             HumanMessage(content=prompt + "\n\n Please find type_state invariants for this code snippet" + code_snippet)
         ])
@@ -65,7 +61,6 @@ async def fetch_snippets(state):
         if hasattr(response, 'response_metadata'):
             usage = response.response_metadata.get('token_usage', {})
             total_tokens += usage.get('total_tokens', 0)
-            #print(f"Tokens used: {usage}")
                   
         raw = response.content
         match = re.search(r"```json\s*(\{.*\})\s*```", raw, re.DOTALL)
@@ -82,41 +77,33 @@ async def fetch_snippets(state):
                 results.append(data)
         except:
             continue
-        
-        timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M")  # use underscores, not slashes
-        results_dir = Path("results") / timestamp
-        results_dir.mkdir(parents=True, exist_ok=True)
-
-        output_path = results_dir / "personal_once_cell.json"
-
-        output = {
-            "agent": "semantic_search_haluc_agent",
-            "description": improvements_note,
-            "prompt": prompt,
-            "results": results,
-            "token_usage": total_tokens,
-            "timestamp": datetime.utcnow().isoformat(),
-        }
-
-        with open(output_path, "w") as f:
-            json.dump(output, f, indent=2)
     
-    find_qualified_names(output_path)
+    # Write output ONCE
+    output = {
+        "agent": "semantic_search_haluc_agent",
+        "description": improvements_note,
+        "prompt": prompt,
+        "results": results,
+        "token_usage": total_tokens,
+        "timestamp": datetime.utcnow().isoformat(),
+    }
 
-    return {"entries": results}
+    with open(output_path, "w") as f:
+        json.dump(output, f, indent=2)
+    
+    return {"entries": results, "output_path": output_path}
 
-def fix_hallucinations(output_path: str) -> None:
-    with open(output_path, "r") as f:
+def fix_hallucinations(input_path: str, repo_path: str, output_path: str) -> None:
+    print("Fixing hallucinations") 
+    with open(input_path, "r") as f:
         ts = json.load(f)
 
     prompt = prompt_clean_up
     results = []
     total_tokens = 0
 
-    output_path = ""
-
     for entry in ts.get("results", []):
-        expanded_start_line, code_snippet = get_code_snippet("/Users/sidneyrichardson/senior_thesis-1/code_examples/personal_once_cell/" + entry["file"], int(entry["line_range"]["start"]), int(entry["line_range"]["end"]))
+        expanded_start_line, code_snippet = get_code_snippet(os.path.join(repo_path, entry["file"]), int(entry["line_range"]["start"]), int(entry["line_range"]["end"]))
 
         qualified_name = ""
         try: 
@@ -124,7 +111,6 @@ def fix_hallucinations(output_path: str) -> None:
         except:
             continue
         
-        print(prompt + "Code snippet: \n" + code_snippet + " \n Entry: \n" + json.dumps(entry) + "\n Qualified Name: \n" + qualified_name + "\n")
         response = llm.invoke([
             HumanMessage(content=prompt + "Code snippet: \n" + code_snippet + "Entry: \n" + json.dumps(entry) + "Qualified Name: \n" + qualified_name + "\n")
         ])
@@ -132,7 +118,6 @@ def fix_hallucinations(output_path: str) -> None:
         if hasattr(response, 'response_metadata'):
             usage = response.response_metadata.get('token_usage', {})
             total_tokens += usage.get('total_tokens', 0)
-            #print(f"Tokens used: {usage}")
                   
         raw = response.content
         match = re.search(r"```json\s*(\{.*\})\s*```", raw, re.DOTALL)
@@ -149,43 +134,63 @@ def fix_hallucinations(output_path: str) -> None:
                 results.append(data)
         except:
             continue
-        
-        timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M")  # use underscores, not slashes
-        results_dir = Path("results") / timestamp
-        results_dir.mkdir(parents=True, exist_ok=True)
-
-        output_path = results_dir / "personal_once_cell.json"
-
-        output = {
-            "agent": "semantic_search_haluc_agent",
-            "description": "hallucination attempted fix",
-            "prompt": prompt,
-            "results": results,
-            "token_usage": total_tokens,
-            "timestamp": datetime.utcnow().isoformat(),
-        }
-
-        with open(output_path, "w") as f:
-            json.dump(output, f, indent=2)
     
-    return {"entries": results}
+    # Write to same output file
+    output = {
+        "agent": "semantic_search_haluc_agent",
+        "description": "hallucination attempted fix",
+        "prompt": prompt,
+        "results": results,
+        "token_usage": total_tokens,
+        "timestamp": datetime.utcnow().isoformat(),
+    }
 
+    with open(output_path, "w") as f:
+        json.dump(output, f, indent=2)
 
-def find_qualified_names(output_name: str) -> None: 
-    # Load typestate output
+def generate_graph(repo_path, graph_output_path, env_path="code_graph_rag/.env"):
+    # Get API key from environment
+    api_key = os.getenv("OPENAI_API_KEY", "")
+    env_content = f"""ORCHESTRATOR_PROVIDER=openai
+ORCHESTRATOR_MODEL=gpt-4o
+ORCHESTRATOR_API_KEY={api_key}
+
+CYPHER_PROVIDER=openai
+CYPHER_MODEL=gpt-4o-mini
+CYPHER_API_KEY={api_key}
+"""
+    os.makedirs(os.path.dirname(env_path), exist_ok=True)
+    with open(env_path, "w") as f:
+        f.write(env_content)
+
+    # Set PYTHONPATH to include code_graph_rag so codebase_rag is importable
+    env = os.environ.copy()
+    code_graph_rag_path = os.path.abspath("code_graph_rag")
+    env["PYTHONPATH"] = (
+        code_graph_rag_path if "PYTHONPATH" not in env
+        else f"{code_graph_rag_path}:{env['PYTHONPATH']}"
+    )
+
+    # Use absolute path for graph output
+    abs_graph_path = os.path.abspath(graph_output_path)  # ADD this line
+
+    # Run the graph generation command
+    cmd = [
+        sys.executable, "-m", "codebase_rag.main", "start",
+        "--repo-path", repo_path,
+        "--update-graph",
+        "--clean",
+        "-o", abs_graph_path  # CHANGE: use absolute path
+    ]
+    subprocess.run(cmd, cwd=code_graph_rag_path, env=env, check=True)
+
+def find_qualified_names(output_name: str, graph_path: str) -> None:  # ADD graph_path parameter
     with open(output_name, "r") as f:
         ts = json.load(f)
-   
-    for result in ts.get("results", []):
-        continue
 
-    
-        
-    # Load graph
-    with open("code_examples/my_graph.json") as f: 
+    with open(graph_path) as f:  # CHANGE from hardcoded "my_graph.json"
         graph_data = json.load(f)
 
-    # Build fast lookup: start_line → node
     line_index = {}
 
     for node in graph_data["nodes"]:
@@ -194,22 +199,14 @@ def find_qualified_names(output_name: str) -> None:
             for ln in range(props["start_line"] - 1, props["end_line"] + 1):
                 line_index[ln] = node
 
-    # For every result block in typestate output
     for result in ts.get("results", []):
         line_start = result["line_range"]["start"]
-
-        # Get the matching node using start_line
         node = line_index.get(line_start)
-
-        # If found, extract the qualified_name
         if node:
             qname = node["properties"].get("qualified_name")
-            
-            # Update all state rows inside the typestate_table
             for entry in result.get("typestate_table", []):
                 entry["qualified_name"] = qname
 
-    # Write back the modified file
     with open(output_name, "w") as f:
         json.dump(ts, f, indent=2)
 
@@ -217,16 +214,7 @@ def find_qualified_names(output_name: str) -> None:
 
     return output_name
 
-graph = StateGraph(State)
-graph.add_node("find_invariants", find_invariants)
-graph.add_node("fetch_snippets", fetch_snippets)
-graph.add_edge(START, "find_invariants")
-graph.add_edge("find_invariants", "fetch_snippets")
-graph.add_edge("fetch_snippets", END)
-app = graph.compile()
-
 def parse(text): 
-    # Split the search results into separate entries (works for double/triple newlines)
     chunks = re.split(r"\n{2,}", text)
     entries = []
 
@@ -235,11 +223,8 @@ def parse(text):
         if not lines:
             continue
 
-        # Identify lines like "6. src/imp_pl.rs"
         file_match = re.search(r"(\d+)\.\s+([^\s]+\.rs)", chunk)
         sim_match = re.search(r"Similarity\s+([0-9.]+)", chunk)
-
-        # Extract all numbered code lines (e.g., "45: pub(crate)...")
         line_numbers = [int(m) for m in re.findall(r"^(\d+):", chunk, re.MULTILINE)]
 
         if file_match and line_numbers:
@@ -252,15 +237,29 @@ def parse(text):
                 "code": "\n".join(chunk.split("\n")[3:]).strip()
             }
             entries.append(entry)
-    
-    
     return entries
 
-async def main(): 
-    state = {"messages": [HumanMessage(content="/Users/sidneyrichardson/senior_thesis-1")]}
-    async for s in app.astream(state, stream_mode="values"): 
-        continue
+async def main(repo_path, graph_path="./my_graph.json"):  # ADD graph_path parameter
+    # Create output file once at the start
+    timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M")
+    results_dir = Path("results") / timestamp
+    results_dir.mkdir(parents=True, exist_ok=True)
+    output_path = results_dir / "personal_once_cell.json"
+    
+    state = {"messages": [HumanMessage(content=repo_path)]}
+    entries_state = await find_invariants(state, repo_path)
+    await fetch_snippets(entries_state, repo_path, output_path)
+    find_qualified_names(output_path, graph_path)  
+    fix_hallucinations(output_path, repo_path, output_path)
+
+    print(f"Results written to: {output_path}")
 
 if __name__ == "__main__":
-    #asyncio.run(main())
-    asyncio.run(fix_hallucinations("results/2025-11-17_16-26/personal_once_cell.json"))
+    parser = argparse.ArgumentParser(description="Semantic Search Haluc Agent")
+    parser.add_argument("repo_path", help="Path to the repository directory")
+    parser.add_argument("--fix", help="Path to the output JSON to fix hallucinations", default=None)
+    args = parser.parse_args()
+    
+    graph_output_path = "./my_graph.json"  # ADD this line
+    generate_graph(args.repo_path, graph_output_path)
+    asyncio.run(main(args.repo_path, graph_output_path))  # CHANGE: pass graph_output_path
