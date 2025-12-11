@@ -30,12 +30,29 @@ cd senior_thesis-1
 
 2. Install dependencies:
 ```bash
-pip install -r merged_two.txt
+pip install -r requirements.txt
+# Universal install script (Linux, macOS, Windows)
+curl -fsSL https://raw.githubusercontent.com/Muvon/octocode/master/install.sh | sh
+octocode config \
+  --code-embedding-model "openai:text-embedding-3-small" \
+  --text-embedding-model "openai:text-embedding-3-small"
+
+cd path/to/rust repo 
+octocode index
 ```
 
 4. Set your OpenAI API key:
 ```bash
 export OPENAI_API_KEY=sk-your-openai-key
+
+curl -fsSL https://raw.githubusercontent.com/Muvon/octocode/master/install.sh | sh
+
+octocode config \
+  --code-embedding-model "openai:text-embedding-3-small" \
+  --text-embedding-model "openai:text-embedding-3-small"
+
+cd path/to/rust repo 
+octocode index
 ```
 
 ## Usage
@@ -45,6 +62,7 @@ export OPENAI_API_KEY=sk-your-openai-key
 Run the full typestate detection pipeline on a Rust repository:
 
 ```bash
+cd senior_thesis-1
 python final_agent.py /path/to/rust/repo
 ```
 
@@ -55,13 +73,6 @@ This will:
 4. Map results to qualified names
 5. Save results to `results/<timestamp>/personal_once_cell.json`
 
-### Hallucination Fix Mode
-
-If you want to fix/validate a previous run's results:
-
-```bash
-python final_agent.py /path/to/rust/repo --fix results/2024-12-09_14-30/personal_once_cell.json
-```
 
 ## Project Structure
 
