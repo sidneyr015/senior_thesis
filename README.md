@@ -30,18 +30,10 @@ cd senior_thesis-1
 
 2. Install dependencies:
 ```bash
-pip install -r requirements.txt
-# Universal install script (Linux, macOS, Windows)
-curl -fsSL https://raw.githubusercontent.com/Muvon/octocode/master/install.sh | sh
-octocode config \
-  --code-embedding-model "openai:text-embedding-3-small" \
-  --text-embedding-model "openai:text-embedding-3-small"
-
-cd path/to/rust repo 
-octocode index
+pip install -r .txt
 ```
 
-4. Set your OpenAI API key:
+4. Set your OpenAI API key and download octocode:
 ```bash
 export OPENAI_API_KEY=sk-your-openai-key
 
